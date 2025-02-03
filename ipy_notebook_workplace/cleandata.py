@@ -51,12 +51,19 @@ def translate_headers(headers):
 def sanitize_data(df):
     def sanitize_cell(cell):
         if isinstance(cell, str):  # Only process string values
-            # Replace specific units in data
-            cell = cell.replace("KW•h", "kWh").replace("MΩ", "MegaOhm").replace("°C", "DegreeC")
-            # Remove remaining units and non-numeric characters
-            cell = re.sub(r'[kWhMegaOhmDegreeCVAM%]', '', cell)
-            cell = re.sub(r'[^0-9.-]', '', cell)
-        return cell  # Return sanitized value
+            # Translate specific terms using the translation map
+            cell = translation_map.get(cell, cell)
+            
+            # If the cell contains numeric values with units, remove the units
+            if any(char.isdigit() for char in cell):  # Check if the cell contains numbers
+                # Remove specific units but preserve numeric values
+                cell = cell.replace("KW•h", "kWh").replace("MΩ", "MegaOhm").replace("°C", "DegreeC")
+                cell = re.sub(r'[kWhMegaOhmDegreeCVAM%]', '', cell)  # Remove units
+                cell = re.sub(r'[^0-9.-]', '', cell)  # Keep only numeric values
+            
+            # Return the translated or original cell value
+            return cell
+        return cell  # Return unchanged if not a string
     
     # Apply sanitization to all cells
     return df.applymap(sanitize_cell)
